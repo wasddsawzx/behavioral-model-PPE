@@ -1,0 +1,32 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/hrc/catkin_ws/behavioral-model-main/targets/simple_switch/simple_switch", //执行的程序
+            "args": ["-i","0@veth0","-i","1@veth2","-i","2@veth4","tests/testdata/test.json"],   // 执行参数
+            "stopAtEntry": true,    // 是否在main()前停止执行
+            "cwd": "/home/hrc/catkin_ws/behavioral-model-main/targets/simple_switch",  // 工作空间
+            "environment": [],
+            "externalConsole": false,   //是否显示外部终端
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",   // gdb路径
+            // "preLaunchTask": "build-debug",
+            "setupCommands": [
+                {
+                    
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true,
+                    "sudo":true,
+                }
+            ],
+            
+        }
+    ]
+}

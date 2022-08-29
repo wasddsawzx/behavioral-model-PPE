@@ -158,6 +158,8 @@ OptionsParser::parse(int argc, char *argv[], TargetParserIface *tp,
        "Maximum number of interfaces that can be bound to the switch; "
        "this is not an upper bound on each port number, which can be arbitrary."
        " Depending on the target, this max value may or may not be enforced.")
+       ("use_ppe","use the ppe function")
+       ("ppe_config_path",po::value<std::string>(),"ppe config file path")
       ;  // NOLINT(whitespace/semicolon)
 
   po::options_description hidden;
@@ -412,6 +414,24 @@ OptionsParser::parse(int argc, char *argv[], TargetParserIface *tp,
     outstream << "Calling target program-options parser\n";
     if (tp->parse(to_pass_further, &outstream)) {
       outstream << "Target parser returned an error\n";
+    }
+  }
+  if(vm.count("ppe_config_path"))
+  {
+    use_ppe = true;
+    ppe_config_path = vm["ppe_config_path"].as<std::string>();
+  }
+  else
+  {
+    if(vm.count("use_ppe"))
+    {
+      use_ppe = true;
+      ppe_config_path = std::string("ppe_config.txt");
+    }
+    else
+    {
+      use_ppe = false;
+      
     }
   }
 }

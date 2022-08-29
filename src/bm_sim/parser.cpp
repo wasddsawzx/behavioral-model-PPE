@@ -53,6 +53,7 @@ ParserLookAhead::peek(const char *data, ByteContainer *res) const {
   extract::generic_extract(data + byte_offset, bit_offset, bitwidth, dst);
 }
 
+// the define of parserOpSet 
 template<>
 void
 ParserOpSet<field_t>::operator()(Packet *pkt, const char *data,
@@ -1046,6 +1047,8 @@ ParseState::expected_switch_case_key_size() const {
   return size;
 }
 
+// parseState opertator. begin the execute of parser
+
 const ParseState *
 ParseState::find_next_state(Packet *pkt, const char *data,
                             size_t *bytes_parsed) const {
@@ -1084,6 +1087,7 @@ ParseState::find_next_state(Packet *pkt, const char *data,
   return default_next_state;
 }
 
+// parsering 
 const ParseState *
 ParseState::operator()(Packet *pkt, const char *data,
                        size_t *bytes_parsed) const {

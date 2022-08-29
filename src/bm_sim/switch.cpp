@@ -38,7 +38,7 @@
 #include <vector>
 
 #include <boost/filesystem.hpp>
-
+#include "ppe.h"
 #include "md5.h"
 
 namespace fs = boost::filesystem;
@@ -261,6 +261,8 @@ SwitchWContexts::init_from_options_parser(
     status = init_objects_empty(parser.device_id, transport);
   else
     status = init_objects(parser.config_file_path, parser.device_id, transport);
+  if(parser.use_ppe)
+    ppe_sim *ppe = new ppe_sim();
   if (status != 0) return status;
 
   if (my_dev_mgr != nullptr)

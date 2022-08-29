@@ -95,6 +95,12 @@ class OptionsParser {
   std::string debugger_addr{};
   std::string state_file_path{};
   size_t dump_packet_data{0};
+
+  // the config for ppe ,if use_ppe,simple_switch will goto ppe 
+  // config_file is for ppe init,include table_init,packet_in_init,buf_init
+  bool use_ppe{false};
+  std::string ppe_config_path{};
+  
   int max_port_count{default_max_port_count};
   std::unordered_set<std::string> options_provided{};
 };

@@ -512,6 +512,7 @@ SimpleSwitch::ingress_thread() {
       ppe_sim *ppe = new ppe_sim();
       ppe->pkt_to_ppe(packet.get());
       ppe->ppe_to_pkt(packet.get());
+      delete ppe;
     }
       
     if (phv->has_field("standard_metadata.parser_error")) {

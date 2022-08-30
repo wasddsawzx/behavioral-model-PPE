@@ -218,7 +218,7 @@ void ppe_sim::pkt_to_ppe(Packet *pkt)
     pkt->set_checksum_error(false);
     const char *data = pkt->data();
 
-    printf("packet to ppe finish");
+    printf("packet in size:%d\n",pkt->get_data_size());
 }
 
 void ppe_sim::ppe_to_pkt(Packet *pkt)
@@ -226,10 +226,10 @@ void ppe_sim::ppe_to_pkt(Packet *pkt)
     
     pkt->set_checksum_error(false);
     char *data;
-    data = pkt->remove(0);
+    data = pkt->remove(10);
     
 
-    printf("ppe to packet finish");
+    printf("packet out size:%d\n",pkt->get_data_size());
 }
 
 void ppe_sim::export_pkt(Packet *pkt)

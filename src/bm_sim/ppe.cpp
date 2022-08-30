@@ -1,9 +1,10 @@
-#include"ppe.h"
+#include<bm/bm_sim/ppe.h>
 #include<bm/bm_sim/debugger.h>
+// #include<bm/bm_sim/packet.h>
 
-
-
-void ppe_sim::cq_init()
+namespace bm
+{
+void ppeInit::cq_init()
 {
     // FILE *fp;
     // fp=fopen("cq.txt","r+");
@@ -32,7 +33,7 @@ void ppe_sim::cq_init()
     core_queues[0].align_ins=1;
 }
 
-bool ppe_sim::all_queue_empty()
+bool ppeInit::all_queue_empty()
 {
     for (int i=0;i<16;i++)
     {
@@ -42,7 +43,7 @@ bool ppe_sim::all_queue_empty()
     return true;
 }
 
-bool ppe_sim::all_core_end()
+bool ppeInit::all_core_end()
 {
     for (int i=0;i<16;i++)
     {
@@ -55,7 +56,7 @@ bool ppe_sim::all_core_end()
     return true;
 }
 
-void ppe_sim::core_queue_check()
+void ppeInit::core_queue_check()
 {
     for (int i=0;i<16;i++)
     {
@@ -114,8 +115,9 @@ void ppe_sim::core_queue_check()
         }
     }
 }
+ 
 
-void ppe_sim::tlb_init()
+void ppeInit::tlb_init()
 {
     tlb_list * list0=(tlb_list *)malloc(sizeof(tlb_list));
     tlb[0].used=0;
@@ -134,9 +136,13 @@ void ppe_sim::tlb_init()
     }
 }
 
-bool ppe_sim::pack_to_tlb(ib_module *ingress, int fcs=0, int port=0)
+void ppe_sim::pkt_to_tlb(Packet *pkt,int fcs=0, int port=0)
 {
-    int mem_offset, sys_meta;
+    int mem_offset=0, sys_meta=0;
+    
+    pkt->set_checksum_error(false);
+    const char *data = pkt->data();
+    size_t data_size = pkt->get_data_size();
     // //���ݶ˿ںŻ�ȡƫ����
     // for (int i = 0; i < 4; i++)
     // {
@@ -146,7 +152,7 @@ bool ppe_sim::pack_to_tlb(ib_module *ingress, int fcs=0, int port=0)
     //�ж��Ƿ�Ԥ��sys_metadata
     if (port == 0 || port == 1)
         sys_meta = 32;
-    int used_num = (ingress->length + mem_offset + sys_meta) / 256 + ((ingress->length + mem_offset + sys_meta) % 256 != 0);
+    int used_num = (data_size + mem_offset + sys_meta) / 256 + ((data_size + mem_offset + sys_meta) % 256 != 0);
     int offset_num = (mem_offset + sys_meta) / 256;
     int offset = (mem_offset + sys_meta) % 256;
     tlb_list *cur = free_tlb_list;
@@ -160,14 +166,16 @@ bool ppe_sim::pack_to_tlb(ib_module *ingress, int fcs=0, int port=0)
         {
             for (int j = 0; j < 256 - offset; j++)
             {
-                tlb[cur->tlb_num & 0x7fff].content[j + offset] = ingress->ingress_buffer[(i - offset_num) * 256 + j]; //�������λ��Чλ
+                // tlb[cur->tlb_num & 0x7fff].content[j + offset] = ingress->ingress_buffer[(i - offset_num) * 256 + j]; 
+                tlb[cur->tlb_num & 0x7fff].content[j + offset] = *(data+(i - offset_num) * 256 + j); 
             }
         }
         else if (i > offset_num)
         {
             for (int j = 0; j < 256; j++)
             {
-                tlb[cur->tlb_num & 0x7fff].content[j] = ingress->ingress_buffer[(i - offset_num) * 256 + j - offset]; //�������λ��Чλ
+                // tlb[cur->tlb_num & 0x7fff].content[j] = *ingress->ingress_buffer[(i - offset_num) * 256 + j - offset]; 
+                tlb[cur->tlb_num & 0x7fff].content[j] = *(data+(i - offset_num) * 256 + j - offset); 
             }
         }
         token_tlb_des->tlb_num[i] = cur->tlb_num | 0x8000; //��TLB��λ����Ϊ��Ч
@@ -179,8 +187,8 @@ bool ppe_sim::pack_to_tlb(ib_module *ingress, int fcs=0, int port=0)
     }
     //����Mailboxλ
     token_tlb_des->mb_addr = 1024;
-    token_tlb_des->mb_content[0] = ingress->length >> 8;
-    token_tlb_des->mb_content[1] = ingress->length % 256;
+    token_tlb_des->mb_content[0] = data_size >> 8;
+    token_tlb_des->mb_content[1] = data_size % 256;
     token_tlb_des->mb_content[2] = mem_offset;
     token_tlb_des->mb_content[3] = 0;
     token_tlb_des->mb_content[4] = fcs | (port << 2);
@@ -201,16 +209,136 @@ bool ppe_sim::pack_to_tlb(ib_module *ingress, int fcs=0, int port=0)
         }
         cur->next = token_tlb_des;
     }
-    return 1;
 }
 
-ppe_sim::ppe_sim():fcs(0),port(0)
+
+void ppe_sim::pkt_to_ppe(Packet *pkt)
 {
     
-    cq_init();
-    tlb_init();
-    printf("--------ppe_init-------");
-  
+    pkt->set_checksum_error(false);
+    const char *data = pkt->data();
+
+    printf("packet to ppe finish");
+}
+
+void ppe_sim::ppe_to_pkt(Packet *pkt)
+{
+    
+    pkt->set_checksum_error(false);
+    char *data;
+    data = pkt->remove(0);
+    
+
+    printf("ppe to packet finish");
+}
+
+void ppe_sim::export_pkt(Packet *pkt)
+{
+    
+    pkt->set_checksum_error(false);
+    char *data;
+    for (int i = 16; i < 20; i++)
+    {
+        tlb_des_queue *pre = NULL;
+        if (core_queues[i].input_queue)
+        {
+            int slice_num, offset, sys_meta, offset_num, pkt_length, port;
+            tlb_des_queue *select = core_queues[i].input_queue;
+            printf("\n*****************CORE_QUEUE******************\n");
+            if (i == 16 || i == 17)
+                sys_meta = 32;
+            else
+                sys_meta = 0;
+            while (select)
+            {
+                pre = select;
+                offset = (select->mb_content[2] + sys_meta) % 256;
+                offset_num = (select->mb_content[2] + sys_meta) / 256;
+                pkt_length = select->mb_content[0] * 256 + select->mb_content[1];
+
+                // compare datasize and change the packet_buffer
+                int offset_length =pkt->get_data_size()-pkt_length;
+                if(offset_length>0)
+                {
+                    data = pkt->prepend(offset_length);
+                }
+                else if(offset_length<0)
+                {
+                    data = pkt->remove(-offset_length);
+                }
+                printf("QUEUE:%d  Length:%d   offset:%d   pkt_len:%d\nMailbox: ", i, select->length, offset, pkt_length);
+                for(int mail = 0; mail < 8; mail++)
+                {
+                    printf("%d  ", select->mb_content[mail]);
+                }
+                printf("\n");
+                for(slice_num = 0; slice_num < select->length; slice_num++)
+                {
+                    if (tlb[select->tlb_num[slice_num] & 0x7fff].used == 0)
+                        continue;
+                    int j;
+                    if (slice_num == offset_num)
+                    {
+                        for (j = 0; j < 256 - offset; j++)
+                        {
+                            // egress.ingress_buffer[(slice_num - offset_num) * 256 + j] = tlb[select->tlb_num[slice_num] & 0x7fff].content[j + offset];
+                            *(data+(slice_num - offset_num) * 256 + j) = tlb[select->tlb_num[slice_num] & 0x7fff].content[j + offset];
+                        }
+                    }
+                    else if (slice_num > offset_num)
+                    {
+                        for (j = 0; j < 256; j++)
+                        {
+                            // egress.ingress_buffer[(slice_num - offset_num) * 256 + j - offset] = tlb[select->tlb_num[slice_num] & 0x7fff].content[j];
+                            *(data+(slice_num - offset_num) * 256 + j - offset) = tlb[select->tlb_num[slice_num] & 0x7fff].content[j];
+                        }
+                    }
+                    tlb[select->tlb_num[slice_num] & 0x7fff].used = 0;
+                    // memset(tlb[select->tlb_num[slice_num]].content,0,256);
+                }
+                char pkt_name[30];
+                sprintf(pkt_name, "egr_%d_%ld_%d.txt", i, clk, ++egr_num);
+                FILE *outfile = fopen(pkt_name, "w");
+                if (!outfile)
+                {
+                    printf("egress file not found!\n");
+                    exit(0);
+                }
+                fprintf(outfile, "%-3d\n", pkt_length);
+                switch (select->mb_content[4] >> 2)
+                {
+                case 0:
+                    port = 0;
+                    break;
+                case 1:
+                    port = 1;
+                    break;
+                case 2:
+                    port = 2;
+                    break;
+                case 3:
+                    port = 3;
+                    break;
+                default:
+                    printf("egress port error!");
+                    exit(0);
+                }
+                fprintf(outfile, "%-3d\n", port);
+                fprintf(outfile, "%-3d\n", port & 0x1);
+                for (int index = 0; index < pkt_length; index++)
+                {
+                    if (index % 4 == 0 && index > 0)
+                        fprintf(outfile, "\n");
+                    fprintf(outfile, "%-3X", *(data+index));
+                }
+                select = select->next;
+                core_queues[i].input_queue = select;
+                free(pre);
+                // printf("Core End\n");
+                fclose(outfile);
+            }
+        }
+    }
 }
 
 
@@ -218,4 +346,5 @@ ppe_sim::ppe_sim():fcs(0),port(0)
 void ppe_sim::transmit(ib_module &&input_buffer)
 {
     // output_buffer(std::move(input_buffer));
+}
 }

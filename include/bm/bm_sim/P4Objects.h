@@ -50,6 +50,7 @@
 #include "control_action.h"
 #include "device_id.h"
 
+
 // forward declaration of Json::Value
 namespace Json {
 

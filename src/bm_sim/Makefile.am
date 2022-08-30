@@ -76,7 +76,8 @@ utils.h \
 version.cpp \
 version.h \
 xxhash.c \
-xxhash.h
+xxhash.h \
+ppe.cpp
 
 libbmsim_la_SOURCES += \
 core/primitives.cpp

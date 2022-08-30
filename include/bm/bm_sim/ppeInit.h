@@ -4,7 +4,8 @@
 #include<string>
 #include<memory>
 
-
+namespace bm
+{
 typedef unsigned char IB_ADDR_TYPE; //Ingress Buffer˫�ֽڱ�ַ
 typedef short HB_ADDR_TYPE; //Head Buffer ˫�ֽڱ�ַ
 typedef short *IB_ADDR_PTR_TYPE; //Ingress Bufferָ���ַ
@@ -44,7 +45,7 @@ struct tlb_list
 
 struct ib_module
 {
-    IB_ADDR_TYPE ingress_buffer[2048];
+    IB_ADDR_TYPE *ingress_buffer;
     int length;
 };
 
@@ -54,11 +55,11 @@ struct hb_module
 };
 
 public:
-    virtual void cq_init();
-    virtual bool all_queue_empty();
-    virtual bool all_core_end();
-    virtual void core_queue_check();
-    virtual void tlb_init();
+    void cq_init();
+    bool all_queue_empty();
+    bool all_core_end();
+    void core_queue_check();
+    void tlb_init();
     
 
 public:
@@ -69,12 +70,16 @@ public:
     tlb_list *free_tlb_list;
 
     ib_module ib;
+    
     ib_module eb;
 
     hb_module hb[128];
 
+    int clk=0;
 
 };
+}
+
 
 
 

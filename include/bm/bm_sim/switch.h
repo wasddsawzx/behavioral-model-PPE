@@ -84,6 +84,7 @@
 #include "queue.h"
 #include "runtime_interface.h"
 #include "target_parser.h"
+#include "ppe.h"
 
 namespace bm {
 
@@ -97,7 +98,7 @@ class Packet;
 //
 //! Base class for a switch implemenattion where multi-context support is
 //! required.
-class SwitchWContexts : public DevMgr, public RuntimeInterface {
+class SwitchWContexts : public DevMgr, public RuntimeInterface,public ppe_sim {
   friend class Switch;
 
  public:
@@ -112,6 +113,8 @@ class SwitchWContexts : public DevMgr, public RuntimeInterface {
   Context *get_context(cxt_id_t cxt_id = 0u) {
     return &contexts.at(cxt_id);
   }
+
+  bool usedppe=false;
 
   int receive(port_t port_num, const char *buffer, int len);
 
@@ -198,6 +201,8 @@ class SwitchWContexts : public DevMgr, public RuntimeInterface {
 
   int init_objects(const std::string &json_path, device_id_t device_id = 0,
                    std::shared_ptr<TransportIface> notif_transport = nullptr);
+
+  int init_ppe();
 
   int init_objects_empty(device_id_t dev_id,
                          std::shared_ptr<TransportIface> transport);
@@ -959,6 +964,7 @@ class SwitchWContexts : public DevMgr, public RuntimeInterface {
   mutable std::mutex config_mutex{};
 
   std::string event_logger_addr{};
+
 };
 
 

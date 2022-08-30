@@ -38,7 +38,6 @@
 #include <vector>
 
 #include <boost/filesystem.hpp>
-#include "ppe.h"
 #include "md5.h"
 
 namespace fs = boost::filesystem;
@@ -56,7 +55,7 @@ packet_handler(int port_num, const char *buffer, int len, void *cookie) {
 SwitchWContexts::SwitchWContexts(size_t nb_cxts, bool enable_swap)
   : DevMgr(),
     nb_cxts(nb_cxts), contexts(nb_cxts), enable_swap(enable_swap),
-    phv_source(PHVSourceIface::make_phv_source(nb_cxts)) {
+    phv_source(PHVSourceIface::make_phv_source(nb_cxts)){
   for (size_t i = 0; i < nb_cxts; i++) {
     contexts.at(i).set_cxt_id(i);
   }
@@ -207,6 +206,9 @@ SwitchWContexts::init_objects_empty(device_id_t dev_id,
   return init_objects(nullptr, dev_id, transport);
 }
 
+// ppe_init
+
+
 int
 SwitchWContexts::init_from_command_line_options(
     int argc, char *argv[], TargetParserIface *tp,
@@ -262,7 +264,7 @@ SwitchWContexts::init_from_options_parser(
   else
     status = init_objects(parser.config_file_path, parser.device_id, transport);
   if(parser.use_ppe)
-    ppe_sim *ppe = new ppe_sim();
+    usedppe =true;
   if (status != 0) return status;
 
   if (my_dev_mgr != nullptr)

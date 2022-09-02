@@ -221,6 +221,7 @@ SimpleSwitch::SimpleSwitch(bool enable_swap, port_t drop_port,
     mirroring_sessions(new MirroringSessions()) {
   add_component<McSimplePreLAG>(pre);
 
+  ppeSim = new ppe_sim();
   add_required_field("standard_metadata", "ingress_port");
   add_required_field("standard_metadata", "packet_length");
   add_required_field("standard_metadata", "instance_type");
@@ -273,7 +274,6 @@ SimpleSwitch::receive_(port_t port_num, const char *buffer, int len) {
 void
 SimpleSwitch::start_and_return_() {
   check_queueing_metadata();
-
   threads_.push_back(std::thread(&SimpleSwitch::ingress_thread, this));
   for (size_t i = 0; i < nb_egress_threads; i++) {
     threads_.push_back(std::thread(&SimpleSwitch::egress_thread, this, i));
@@ -302,6 +302,7 @@ SimpleSwitch::~SimpleSwitch() {
   for (auto& thread_ : threads_) {
     thread_.join();
   }
+  delete ppeSim;
 }
 
 void
@@ -477,7 +478,7 @@ SimpleSwitch::multicast(Packet *packet, unsigned int mgid) {
 void
 SimpleSwitch::ingress_thread() {
   PHV *phv;
-
+  
   while (1) {
     std::unique_ptr<Packet> packet;
     input_buffer->pop_back(&packet);
@@ -509,10 +510,11 @@ SimpleSwitch::ingress_thread() {
 
     if (usedppe==true)
     {
-      ppe_sim *ppe = new ppe_sim();
-      ppe->pkt_to_ppe(packet.get());
-      ppe->ppe_to_pkt(packet.get());
-      delete ppe;
+      // ppeSim->pkt_to_ppe(packet.get());
+      // ppeSim->ppe_to_pkt(packet.get()); 
+      printf("--------------enter ppe-------------");
+      ppeSim->sim(packet.get());
+      printf("--------------leave ppe-------------");
     }
       
     if (phv->has_field("standard_metadata.parser_error")) {
@@ -639,6 +641,7 @@ SimpleSwitch::ingress_thread() {
 
     enqueue(egress_port, std::move(packet));
   }
+  
 }
 
 void
@@ -734,7 +737,10 @@ SimpleSwitch::egress_thread(size_t worker_id) {
     }
 
     deparser->deparse(packet.get());
-
+    if(usedppe)
+    {
+      
+    }
     // RECIRCULATE
     auto recirculate_flag = RegisterAccess::get_recirculate_flag(packet.get());
     if (recirculate_flag) {

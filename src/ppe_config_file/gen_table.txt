@@ -1,0 +1,22 @@
+Table_num:2
+TableID:0
+ItemSize:4
+ItemID:2
+Item:
+0 0 0 0 
+ItemID:1
+Item:
+2 1 255 255
+TableEnd
+TableID:2
+ItemSize:12
+ItemID:0
+Item:
+0 0 0 0 0 0 0 0 0 0 0 0
+ItemID:1
+Item:
+1 1 1 1 1 1 1 1 1 1 1 1
+ItemID:4
+Item:
+2 2 2 2 2 2 2 2 2 2 2 2
+TableEnd

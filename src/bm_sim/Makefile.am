@@ -77,7 +77,8 @@ version.cpp \
 version.h \
 xxhash.c \
 xxhash.h \
-ppe.cpp
+ppe.cpp  \
+macro_caculate.cpp
 
 libbmsim_la_SOURCES += \
 core/primitives.cpp

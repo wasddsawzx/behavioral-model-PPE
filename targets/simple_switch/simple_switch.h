@@ -130,6 +130,9 @@ class SimpleSwitch : public Switch {
     return drop_port;
   }
 
+  // define ppe
+  ppe_sim *ppeSim;
+
   SimpleSwitch(const SimpleSwitch &) = delete;
   SimpleSwitch &operator =(const SimpleSwitch &) = delete;
   SimpleSwitch(SimpleSwitch &&) = delete;

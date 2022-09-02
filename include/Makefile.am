@@ -94,7 +94,8 @@ bm/bm_sim/target_parser.h \
 bm/bm_sim/transport.h \
 bm/bm_sim/header_unions.h \
 bm/bm_sim/ppe.h   \
-bm/bm_sim/ppeInit.h
+bm/bm_sim/ppeInit.h  \
+bm/bm_sim/macro_caculate.h
 
 nobase_include_HEADERS += \
 bm/bm_sim/core/primitives.h

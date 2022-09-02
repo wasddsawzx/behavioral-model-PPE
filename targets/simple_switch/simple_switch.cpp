@@ -507,14 +507,14 @@ SimpleSwitch::ingress_thread() {
        deparser. TODO? */
     const Packet::buffer_state_t packet_in_state = packet->save_buffer_state();
     parser->parse(packet.get());
-
+    printf("usedppe: %d\n",usedppe);
     if (usedppe==true)
     {
       // ppeSim->pkt_to_ppe(packet.get());
       // ppeSim->ppe_to_pkt(packet.get()); 
-      printf("--------------enter ppe-------------");
+      printf("--------------enter ppe-------------\n");
       ppeSim->sim(packet.get());
-      printf("--------------leave ppe-------------");
+      printf("--------------leave ppe-------------\n");
     }
       
     if (phv->has_field("standard_metadata.parser_error")) {

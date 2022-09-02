@@ -360,7 +360,10 @@ void ppeInit::cq_init()
         else
         {
             core_queues[i].align_ins=-1;
+            
         }
+        for(int j=0;j<8;j++)
+            core_queues[i].is_used[j]=false;
         printf("%d:ins%d\n",i,core_queues[i].align_ins);
     }
     // for(int i=0;i<16;++i)
@@ -376,7 +379,7 @@ bool ppe_sim::all_queue_empty()
     for (int i=0;i<16;i++)
     {
         if (core_queues[i].input_queue!=NULL)
-        return false;
+            return false;
     }
     return true;
 }
@@ -6889,32 +6892,32 @@ void ppe_sim::export_pkt(Packet *pkt,int *packet_out)
 void ppe_sim::sim(Packet *pkt)
 {
     int packet_out=1;
-    while (1)
+    int flag =0;
+    while (!(all_queue_empty() && all_core_end()&&packet_out<=0))
     {
-        if(all_queue_empty() && all_core_end())
-        {
-            break;
-        }
-        if(packet_out<=0)
-            break;
     // if(all_queue_empty)
         for (int i = 0; i < 16; i++)
         {
             for (int j = 0; j < 8; j++)
             {
-                printf(" %d  ",i,core_queues[i].is_used[j]);
+                printf(" %d  ",core_queues[i].is_used[j]);
              
             }
             printf("\n");
         }
-        pkt_to_tlb(pkt,0,0);
+        if(flag==0)
+        {
+            pkt_to_tlb(pkt,0,0);
+            ++flag;
+        }
+            
 
         core_queue_check();
         for (int i = 0; i < 16; i++)
         {
             for (int j = 0; j < 8; j++)
             {
-                printf(" %d  ",i,core_queues[i].is_used[j]);
+                printf(" %d  ",core_queues[i].is_used[j]);
              
             }
             printf("\n");
@@ -6932,6 +6935,7 @@ void ppe_sim::sim(Packet *pkt)
         printf("packet_out:%d\n",packet_out);
         clk++;
     }
+    clk =0;
 
     
 }

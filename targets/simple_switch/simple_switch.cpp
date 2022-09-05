@@ -34,7 +34,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-
+#include<time.h>
 #include "simple_switch.h"
 #include "register_access.h"
 
@@ -572,6 +572,19 @@ SimpleSwitch::ingress_thread() {
         // the alternative would be to pay the (huge) price of PHV copy for
         // every ingress packet
         parser->parse(packet_copy.get());
+        
+        if (usedppe==true)
+        {
+          // ppeSim->pkt_to_ppe(packet.get());
+          // ppeSim->ppe_to_pkt(packet.get());
+
+          printf("--------------enter ppe-------------\n");
+          time_t first,sencond;
+          first = time(NULL);
+          ppeSim->sim(packet.get());
+          sencond = time(NULL);
+          printf("--------------leave ppe-------------\n,the cost time in ppe is: %f\n",difftime(sencond,first));
+        }
         copy_field_list_and_set_type(packet, packet_copy,
                                      PKT_INSTANCE_TYPE_INGRESS_CLONE,
                                      field_list_id);
@@ -687,7 +700,14 @@ SimpleSwitch::egress_thread(size_t worker_id) {
         packet->get_register(RegisterAccess::PACKET_LENGTH_REG_IDX));
 
     egress_mau->apply(packet.get());
-
+    if (usedppe==true)
+    {
+      // ppeSim->pkt_to_ppe(packet.get());
+      // ppeSim->ppe_to_pkt(packet.get()); 
+      printf("--------------enter ppe-------------\n");
+      ppeSim->sim(packet.get());
+      printf("--------------leave ppe-------------\n");
+    }
     auto clone_mirror_session_id =
         RegisterAccess::get_clone_mirror_session_id(packet.get());
     auto clone_field_list = RegisterAccess::get_clone_field_list(packet.get());
@@ -737,10 +757,6 @@ SimpleSwitch::egress_thread(size_t worker_id) {
     }
 
     deparser->deparse(packet.get());
-    if(usedppe)
-    {
-      
-    }
     // RECIRCULATE
     auto recirculate_flag = RegisterAccess::get_recirculate_flag(packet.get());
     if (recirculate_flag) {

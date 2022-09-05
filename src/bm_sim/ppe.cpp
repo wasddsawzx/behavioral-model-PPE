@@ -889,7 +889,7 @@ bool ppeInit::table_init()
     item_cnt = -1;
     data_cnt = -1;
 
-    while (!feof(fp)) //��Ƕ�ף���
+    while (!feof(fp)) 
     {
         char *ce = fgets(c, 100, fp);
         if (ce == NULL)
@@ -6896,15 +6896,15 @@ void ppe_sim::sim(Packet *pkt)
     while (!(all_queue_empty() && all_core_end()&&packet_out<=0))
     {
     // if(all_queue_empty)
-        for (int i = 0; i < 16; i++)
-        {
-            for (int j = 0; j < 8; j++)
-            {
-                printf(" %d  ",core_queues[i].is_used[j]);
+        // for (int i = 0; i < 16; i++)
+        // {
+        //     for (int j = 0; j < 8; j++)
+        //     {
+        //         printf(" %d  ",core_queues[i].is_used[j]);
              
-            }
-            printf("\n");
-        }
+        //     }
+        //     printf("\n");
+        // }
         if(flag==0)
         {
             pkt_to_tlb(pkt,0,0);
@@ -6913,16 +6913,6 @@ void ppe_sim::sim(Packet *pkt)
             
 
         core_queue_check();
-        for (int i = 0; i < 16; i++)
-        {
-            for (int j = 0; j < 8; j++)
-            {
-                printf(" %d  ",core_queues[i].is_used[j]);
-             
-            }
-            printf("\n");
-            
-        }
         ppe_run();
         cq_event_node *current_event = check_cq_event(clk);
         while (current_event != NULL)
@@ -6935,9 +6925,12 @@ void ppe_sim::sim(Packet *pkt)
         printf("packet_out:%d\n",packet_out);
         clk++;
     }
+    // Init ppe for next sim function
+    // cq_init();
+    // tlb_init();
+    // table_init();
+    // multi_ins_init();
     clk =0;
-
-    
 }
 
 

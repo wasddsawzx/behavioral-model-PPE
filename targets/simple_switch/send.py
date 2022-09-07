@@ -27,26 +27,29 @@ def main():
     parser.add_argument("--m", help="Raw Message", type=str)
     parser.add_argument("--dur", help="in seconds", type=str)
     args = parser.parse_args()
-
+    msg = ""
+    for i in range(0,1000):
+        msg+='1'
     if args.p and args.des and args.m and args.dur:
         addr = socket.gethostbyname(args.des)
         iface = get_if()
         if args.p == 'UDP':
-            pkt = Ether() / IP(dst=addr, tos=1) / UDP() / args.m
+            
+            pkt = Ether() / IP(dst=addr, tos=1) / UDP() / msg
             pkt.show2()
             try:
                 for i in range(int(args.dur)):
                     sendp(pkt, iface=iface)
-                    sleep(1)
+                    sleep(10)
             except KeyboardInterrupt:
                 raise
         elif args.p == 'TCP':
-            pkt = Ether() / IP(dst=addr, tos=1) / TCP() / args.m
+            pkt = Ether() / IP(dst=addr, tos=1) / TCP() / msg
             pkt.show2()
             try:
                 for i in range(int(args.dur)):
                     sendp(pkt, iface=iface)
-                    sleep(1)
+                    sleep(10)
             except KeyboardInterrupt:
                 raise
 

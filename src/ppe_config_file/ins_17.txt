@@ -1,0 +1,856 @@
+//////////////////////////////////////////////////
+//****     about the word addr in lb       *****//
+//    tag ----------  0x00                      //
+//    sour port ----  0x04                      //
+//    dest port ----  0x04                      //
+//    que num  -----  0x04                      //
+//    opcode   -----  0x05                      //
+//    flag  --------  0x06                      //
+//    priority  ----  0x07                      //
+//    table  -------  0x08                      //
+//    prepend  -----  0xa                       //
+//    point cluster-  0xc                       //
+//    wb cluster ---  0x2c                      //
+//    payload  -----  0x3e                      //
+//////////////////////////////////////////////////
+#include "label3.h"
+#include "label4.h"
+#include "label5.h"
+
+//////////////////////////////////////////////////
+//*****             baseaddr               *****//
+//////////////////////////////////////////////////
+
+
+//+++++++GPR24 new slice addr                   //
+//+++++++GPR23 new slice dataaddr               //
+//+++++++GPR27 slice num                        //
+//+++++++GPR26 length                           //
+//+++++++GPR25 offest                           //
+//+++++++GPR22 prepend add judge                //
+//+++++++GPR20 determine the size               //
+//+++++++GPR21 prepend length                   //
+//+++++++GPR19 initial position                 //
+//////////////////////////////////////////////////
+//*****        sor port Judgment           *****//
+//////////////////////////////////////////////////
+// +++++ if mac b to #pc_load_offset
+// +++++ else b to #pc_load_nooffset
+//////////////////////////////////////////////////
+//*****  load pkt_head data from PK to LB  *****//
+//////////////////////////////////////////////////
+// --- #pc_load_offset
+    MOVI GPR2, #NO_SYS_OFFSET
+    MOVI GPR0, #256           // Byte addr
+    MOVI GPR1, #BASEADDR_HB
+    LOADM [GPR2], [GPR1], GPR0
+    NOP
+    NOP
+    ISB PBLC
+    //MOVBB [GPR0], [GPR1], GPR0
+///////////////////////////////////////////////////
+///   Calculate the total slice number    /////////
+///////////////////////////////////////////////////
+    BI #label_calc_slice_number
+    NOP
+//////////////////////////////////////////////////
+//*****            tag Judgment            *****//
+//////////////////////////////////////////////////
+label_judge_source:    
+    MOVI GPR0, #BASEADDR_MB
+    ADDI GPR0, GPR0, #4
+    MOVBRBE GPR1, [GPR0]
+    SLL GPR1, GPR1, #12
+    SRL GPR1, GPR1, #14
+    SUBI GPR2, GPR1, #0
+    BEQI #label_GPR28_zero
+    NOP
+    SUBI GPR2, GPR1, #1
+    BEQI #label_GPR28_zero
+    NOP
+    SUBI GPR2, GPR1, #2
+    BEQI #label_GPR28_one
+    NOP
+    SUBI GPR2, GPR1, #3
+    BEQI #label_GPR28_one
+    NOP
+
+//////////////////////////////////////////////////
+//*****               judge flag           *****//
+//////////////////////////////////////////////////
+
+    MOVI GPR0, #BASEADDR_FLAG
+    ADD GPR0, GPR0, GPR28
+    MOVBRBE GPR1, [GPR0]
+    SRL GPR29, GPR1, #12         
+
+//////////////////////////////////////////////////
+//*****           opcode Judgment          *****//
+/////////////////////////////////////////////////
+label_opcode_judgment:
+    MOVI GPR0, #BASEADDR_OPC
+    ADD GPR0, GPR0, GPR28
+    MOVBRBE GPR1, [GPR0]
+    SLL GPR1, GPR1, #8
+    SRL GPR1, GPR1, #8
+    MOVI GPR2, #0         // default
+    SUB GPR2, GPR2, GPR1
+    BEQI #label_judge_flag
+    NOP
+    MOVI GPR2, #1         // mirror
+    SUB GPR2, GPR2, GPR1
+    BEQI #label_opcpde_one_mirror
+    NOP
+    MOVI GPR2, #2         // drop
+    SUB GPR2, GPR2, GPR1
+    BEQI #label_opcpde_two_drop
+    NOP
+    MOVI GPR2, #3         // prepend
+    SUB GPR2, GPR2, GPR1
+    BEQI #label_opcpde_three_prepend
+    NOP
+    MOVI GPR2, #4         // table
+    SUB GPR2, GPR2, GPR1
+    BEQI #label_table
+    NOP
+    MOVI GPR2, #5         // more wr+rd
+    SUB GPR2, GPR2, GPR1
+    BEQI #label_more_wd
+    NOP
+//////////////////////////////////////////////////
+//*****               judge flag           *****//
+//////////////////////////////////////////////////
+label_judge_flag:
+    MOVI GPR0, #BASEADDR_FLAG
+    ADD GPR0, GPR0, GPR28
+    MOVBRBE GPR1, [GPR0]
+    SRL GPR29, GPR1, #12         
+    SLL GPR1, GPR1, #4
+    SRL GPR1, GPR1, #12
+    SUBI GPR2, GPR1, #0        
+    BEQI #label_storem
+    NOP
+//////////////////////////////////////////////////
+//*****               wb cluster           *****//
+//////////////////////////////////////////////////
+    MOVI GPR0, #BASEADDR_PCLUST
+    ADD GPR0, GPR0, GPR28
+    ADD GPR1, GPR29, GPR29      
+    ADD GPR1, GPR1, GPR0            
+    MOVBRBE GPR2, [GPR1]
+    SUBI GPR3, GPR2, #0xffff
+    BEQI #label_storem
+    NOP
+    SRL GPR2, GPR2, #12
+    SLL GPR4, GPR29, #15
+    SRL GPR4, GPR4, #15
+    MOVI GPR5, #BASEADDR_WCLUST
+    ADD GPR5, GPR5, GPR28
+    SUBI GPR4, GPR4, #0
+    BEQI #label_even
+    NOP
+    SUBI GPR4, GPR4, #1
+    BEQI #label_old
+    NOP
+    SRL GPR6, GPR29, #1
+    ADD GPR5, GPR5, GPR6
+    MOVRBBE [GPR5], GPR6
+    ADDI GPR29, GPR29, #1
+//GPR29 write back//
+    MOVI GPR0, #BASEADDR_FLAG
+    ADD GPR0, GPR0, GPR28
+    MOVBRBE GPR1, [GPR0]
+    SLL GPR1, GPR1, #4
+    SRL GPR1, GPR1, #4
+    MOVRR GPR2, GPR29
+    SLL GPR2, GPR2, #12
+    OR GPR3, GPR1, GPR2
+    MOVRBBE [GPR0], GPR3
+//////////////////////////////////////////////////
+//*****            storem                  *****//
+//////////////////////////////////////////////////
+label_storem:
+    SUBI GPR20, GPR22, #0
+    BEQI #label_storem0
+    NOP
+    SUBI GPR20, GPR22, #1
+    BEQI #label_storem1
+    NOP
+    SUBI GPR20, GPR22, #2
+    BEQI #label_storem2
+    NOP
+    SUBI GPR20, GPR22, #3
+    BEQI #label_storem3
+    NOP
+    SUBI GPR20, GPR22, #4
+    BEQI #label_storem4
+    NOP
+    SUBI GPR20, GPR22, #5
+    BEQI #label_storem5
+    NOP
+label_storem0:
+    MOVI GPR0, #BASEADDR_HB
+    MOVI GPR1, #NO_SYS_OFFSET
+    MOVI GPR2, #256
+    STOREM [GPR0], [GPR1], GPR2
+    ISB PBSC
+    BI #label_I_E
+    NOP
+label_storem1:
+    MOVI GPR0, #BASEADDR_HB
+    MOVI GPR1, #NO_SYS_OFFSET
+    MOVI GPR2, #256
+    STOREM [GPR0], [GPR1], GPR2
+    ISB PBSC
+    ADDI GPR0, GPR0, #256
+    ADDI GPR1, GPR1, #256
+    STOREM [GPR0], [GPR1], GPR2
+    ISB PBSC
+    BI #label_I_E
+    NOP
+label_storem2:
+    MOVI GPR0, #BASEADDR_HB
+    MOVI GPR1, #NO_SYS_OFFSET
+    MOVI GPR2, #256
+    STOREM [GPR2], [GPR1], GPR2
+    ISB PBSC
+    ADDI GPR0, GPR0, #512
+    ADDI GPR1, GPR1, #256
+    STOREM [GPR0], [GPR1], GPR2
+    ISB PBSC
+    BI #label_I_E
+    NOP
+label_storem3:
+    MOVI GPR0, #BASEADDR_HB
+    MOVI GPR1, #NO_SYS_OFFSET
+    MOVI GPR2, #256
+    STOREM [GPR0], [GPR21], GPR2
+    ISB PBSC
+    SUB GPR3, GPR2, GPR21
+    STOREM [GPR23], [GPR3], GPR21
+    ISB PBSC
+    BI #label_I_E
+    NOP
+label_storem4:
+    MOVI GPR0, #BASEADDR_HB
+    MOVI GPR1, #NO_SYS_OFFSET
+    MOVI GPR2, #256
+    MOVI GPR3, #512
+    SUB GPR3, GPR3, GPR21
+    STOREM [GPR0], [GPR21], GPR3
+    ISB PBSC
+    SUBI GPR4, GPR21, #256
+    ADDI GPR5, GPR23, #256
+    STOREM [GPR5], [GPR4], GPR2
+    ISB PBSC
+    MOVI GPR6, #512
+    SUB GPR6, GPR6, GPR21
+    STOREM [GPR6], [GPR1], GPR4
+    ISB PBSC
+    BI #label_I_E
+    NOP
+label_storem5:
+    MOVI GPR0, #BASEADDR_HB
+    SUBI GPR1, GPR21, #256
+    MOVI GPR2, #512
+    SUB GPR2, GPR2, GPR21
+    ADD GPR2, GPR2, GPR23
+    STOREM [GPR2], [GPR0], GPR1
+    ISB PBSC
+    BI #label_I_E
+    NOP
+//////////////////////////////////////////////////
+//*****             ISMB--ESMB             *****//
+//////////////////////////////////////////////////
+label_I_E:
+    MOVI GPR0, #BASEADDR_ISMB
+    MOVI GPR1, #BASEADDR_ESMB
+    MOVRR GPR3, GPR27
+    SUBI GPR20, GPR22, #3
+    BEQI #label_prepend_add_IS_1
+    NOP
+    SUBI GPR20, GPR22, #4
+    BEQI #label_prepend_add_IS_2
+    NOP
+    SUBI GPR20, GPR22, #5
+    BEQI #label_prepend_add_IS_2
+    NOP
+    MOVI GPR2, #2
+    
+label_ISMB_ESMB:
+    MOVBB [GPR1], [GPR0], GPR2
+    ADDI GPR0, GPR0, #2
+    ADDI GPR1, GPR1, #2 
+    SUBI GPR3, GPR3, #1
+    BEQI #label_judge_next_cluster
+    NOP
+    NOP
+    BI #label_ISMB_ESMB
+    NOP
+
+//////////////////////////////////////////////////
+//*****         judge next cluster         *****//
+//////////////////////////////////////////////////
+
+//  if next cluster == 1111_1111 
+//    comb q_num
+//    b to #push_tm_q
+//  else 
+//    comb q_num
+//    b to #push_cluster_q
+label_judge_next_cluster:
+    MOVI GPR0, #BASEADDR_PCLUST
+    ADD GPR0, GPR0, GPR28
+    ADD GPR1, GPR29, GPR29
+    ADD GPR1, GPR1, GPR0
+    MOVBRBE GPR2, [GPR1]
+    SUBI GPR3, GPR2, #0xffff
+    BEQI #label_reset
+    NOP
+//////////////////////////////////////////////////
+//*****         pushq         *****//
+//////////////////////////////////////////////////
+    MOVI GPR3, #BASEADDR_DPORT
+    ADD GPR3, GPR3, GPR28
+    MOVBRBE GPR0, [GPR3]
+    SLL GPR0, GPR0, #2
+    SRL GPR0, GPR0, #14
+    ADD GPR0, GPR0, GPR0
+    MOVSR GPR1, SR_SYS.COREID
+    SRL GPR1, GPR1, #3
+    SLL GPR1, GPR1, #4
+    OR GPR0, GPR0, GPR1
+    MOVI GPR2, #BASEADDR_MB
+    ADDI GPR2, GPR2, #2
+    PUSHQ GPR0, [GPR2], GPR27
+    ISBC ICT
+//////////////////////////////////////////////////
+//*****                reset               *****//
+//////////////////////////////////////////////////
+label_reset:
+    MOVI GPR0, #1
+    MOVRS SR_SYS.STA, GPR0
+    END
+    NOP
+    NOP
+///////////////////////////////////////////////////
+///   Calculate the total slice number    /////////
+///////////////////////////////////////////////////
+label_calc_slice_number:
+    MOVI GPR0, #BASEADDR_MB                                                                                                           
+    MOVBRBE GPR26, [GPR0]
+    ADDI GPR0, GPR0, #2
+    MOVBRLE GPR25, [GPR0]
+    SLL GPR25, GPR25, #8
+    SRL GPR25, GPR25, #8
+    MOVRR GPR2,GPRZ
+    ADD GPR2,GPR2,GPR25
+    ADD GPR2,GPR2,GPR26
+    ANDI GPR0,GPR2,#0x00ff
+    SRL GPR1,GPR2,#8
+    SUBI GPR0,GPR0,#0
+    BEQI #label_low8bit_zero
+    NOP
+    ADDI GPR1,GPR1,#1
+label_low8bit_zero:
+    MOVRR GPR27,GPR1
+    BI #label_judge_source
+    NOP
+///////////////////////////////////////////////////
+///              Judge GPR28              /////////
+///////////////////////////////////////////////////
+label_GPR28_zero:
+    MOVI GPR28, #32
+    B GPR30
+    NOP
+label_GPR28_one:
+    MOVI GPR28, #0
+    B GPR30
+    NOP
+//even//
+label_even:
+    SLL GPR6, GPR2, #8
+    B GPR30
+    NOP
+//old//
+label_old:
+    MOVRR GPR6, GPR2
+    B GPR30
+    NOP
+//////////////////////////////////////////////////
+//*****           opcode 1 mirror          *****//
+//////////////////////////////////////////////////
+label_opcpde_one_mirror:
+    MOVI GPR0, #BASEADDR_ISMB
+    MOVI GPR1, #BASEADDR_ESMB
+    ADD GPR1, GPR1, GPR27
+    ADD GPR1, GPR1, GPR27
+    MOVI GPR2, #2
+    MOVRR GPR3, GPR27
+    MOVBB [GPR1], [GPR0], GPR27
+//////////////////////////////////////////////////
+//*****            opcode 2 drop           *****//
+//////////////////////////////////////////////////
+label_opcpde_two_drop:
+    MOVI GPR0, #BASEADDR_ISMB
+    MOVRR GPR1, GPR27
+    FREESMB [GPR1], GPR27
+    ISBC SMB
+    B GPR30
+    NOP
+//////////////////////////////////////////////////
+//*****          opcode 3  prepend         *****//
+//////////////////////////////////////////////////
+label_opcpde_three_prepend:
+    MOVI GPR0, #BASEADDR_PRED
+    ADD GPR0, GPR0, GPR28
+    MOVBRBE GPR1, [GPR0]
+    MOVBRBE GPR2, [GPR0]
+    MOVBRBE GPR3, [GPR0]
+    SLL GPR1, GPR1, #1       
+    SRL GPR1, GPR1, #9       //起始位置   
+    SLL GPR2, GPR2, #8
+    SRL GPR2, GPR2, #8      //长度     
+    SRL GPR3, GPR3, #15    //首项     
+    MOVRR GPR17, GPR2
+    ADD GPR21, GPR2, GPR2
+    ADD GPR19, GPR1, GPR1
+    SUBI GPR3, GPR3, #1
+    BEQI #label_prepend_add
+    NOP
+label_prepend_minus:
+    MOVI GPR5, #BASEADDR_HB
+    MOVI GPR4, #62
+    ADD GPR4, GPR4, GPR1
+    ADD GPR4, GPR4, GPR1
+    ADD GPR4, GPR4, GPR28
+    ADDI GPR7, GPR5, #256
+    ADD GPR8, GPR4, GPR2
+    ADD GPR8, GPR8, GPR2
+    SUBI GPR20, GPR8, #256
+    BGTI #label_a
+    NOP
+    BI #label_c
+    NOP
+label_a:
+    SUBI GPR20, GPR8, #512
+    BGTI #label_b
+    NOP
+    MOVI GPR9, #256
+    LOADM [GPR9], [GPR9], GPR9
+    ISB PBLC
+    ADD GPR2, GPR2, GPR2
+    MOVBB [GPR2], [GPR5], GPR4
+    SUB GPR26, GPR26, GPR2
+    ADD GPR25, GPR25, GPR2
+    ADD GPR28, GPR28, GPR2
+    MOVI GPR6, #BASEADDR_MB
+    MOVRBBE [GPR6], GPR26
+    ADDI GPR6, GPR6, #2
+    MOVRBLE [GPR6], GPR25
+    MOVI GPR22, #1
+    BI #label_judge_flag
+    NOP
+label_b:
+    MOVI GPR9, #BASEADDR_ISMB
+    ADDI GPR9, GPR9, #2
+    MOVI GPR10, #1
+    MOVI GPR11, #256
+    MOVI GPR12, #512 
+    LOADM [GPR11], [GPR12], GPR11
+    ISB PBLC
+    SUBI GPR8, GPR8, #256
+    SUB GPR8, GPR8, GPR4
+    MOVBB [GPR8], [GPR5], GPR4
+    ADD GPR28, GPR28, GPR8
+    ADD GPR2, GPR2, GPR2
+    SUB GPR26, GPR26, GPR2
+    ADD GPR25, GPR25, GPR2
+    MOVI GPR6, #BASEADDR_MB
+    MOVRBBE [GPR6], GPR26
+    ADDI GPR6, GPR6, #2
+    MOVRBLE [GPR6], GPR25
+    MOVI GPR22, #2
+    BI #label_judge_flag
+    NOP
+label_c:
+    ADD GPR2, GPR2, GPR2
+    MOVBB [GPR7], [GPR5], GPR4
+    MOVBB [GPR2], [GPR7], GPR4
+    SUB GPR26, GPR26, GPR2
+    ADD GPR25, GPR25, GPR2
+    ADD GPR28, GPR28, GPR2
+    MOVI GPR6, #BASEADDR_MB
+    MOVRBBE [GPR6], GPR26
+    ADDI GPR6, GPR6, #2
+    MOVRBLE [GPR6], GPR25
+    MOVI GPR22, #0
+    BI #label_judge_flag
+    NOP
+label_prepend_add:
+    MOVI GPR4, #62
+    ADD GPR4, GPR4, GPR28
+    ADD GPR4, GPR4, GPR1
+    ADD GPR4, GPR4, GPR1
+    MOVI GPR5, #62
+    ADD GPR5, GPR5, GPR28
+    ADD GPR5, GPR5, GPR1
+    ADD GPR5, GPR5, GPR1
+    ADD GPR5, GPR5, GPR2
+    ADD GPR5, GPR5, GPR2
+    ADD GPR2, GPR2, GPR2
+    MOVRR GPR7, GPR4
+    MOVI GPR12, #256
+    MOVRR GPR15, GPR12
+    SUB GPR13, GPR12, GPR4
+    MOVRR GPR14, GPR13
+    SUBI GPR20, GPR5, #512
+    BGTI #label_512
+    SUBI GPR20, GPR5, #256
+    BGTI #label_d
+    NOP 
+    MOVBB [GPR12], [GPR4], GPR13
+    MOVBB [GPR5], [GPR15], GPR13
+    BI #label_e
+    NOP
+label_d:
+    MOVBB [GPR5], [GPR4], GPR13
+label_e:
+    ADD GPR26, GPR26, GPR2
+    MOVI GPR6, #256
+    SUB GPR6, GPR6, GPR2
+    ADD GPR25, GPR25, GPR6
+    MOVI GPR11, #BASEADDR_MB
+    MOVRBBE [GPR11], GPR26
+    MOVRBLE [GPR11], GPR25
+label_repeat:
+    MOVI GPR14, #2
+    MOVRR GPR15, GPR28
+label_next:
+    MOVBB [GPR7], [GPR15], GPR14
+    ADDI GPR15, GPR15, #2
+    ADDI GPR7, GPR7, #2
+    SUBI GPR17, GPR17, #1
+    BEQI #label_new_slice
+    NOP
+    MOVI GPR16, #62
+    SUBI GPR16, GPR16, #2
+    BEQI #label_repeat
+    NOP
+    BI #label_next
+    NOP
+label_new_slice:
+    SUBI GPR20, GPR2, #256
+    BGTI #label_two_new_slice
+    NOP
+    MOVI GPR24, #BASEADDR_ISMB
+    ADD GPR24, GPR24, GPR27
+    ADD GPR24, GPR24, GPR27
+    MOVI GPR1, #1
+    MALCSMB [GPR24], GPR1
+    ISB SMB
+    MOVRR GPR7, GPR24
+    SLL GPR7, GPR7, #8
+    SRL GPR7, GPR7, #1
+    MOVRR GPR23, GPR7
+    MOVI GPR22, #3
+    ADD GPR26, GPR26, GPR21
+    ADDI GPR25, GPR25, #256
+    SUB GPR25, GPR25, GPR21
+    MOVI GPR6, #BASEADDR_MB
+    MOVRBBE [GPR6], GPR26
+    ADDI GPR6, GPR6, #2
+    MOVRBLE [GPR6], GPR25
+    ADDI GPR27, GPR27, #1
+    BI #label_judge_flag
+    NOP
+label_two_new_slice:
+    MOVI GPR24, #BASEADDR_ISMB
+    ADD GPR24, GPR24, GPR27
+    ADD GPR24, GPR24, GPR27
+    MOVI GPR1, #2
+    MALCSMB [GPR24], GPR1
+    ISB SMB
+    MOVRR GPR7, GPR24
+    SRL GPR7, GPR7, #2
+    SLL GPR7, GPR7, #9
+    MOVRR GPR23, GPR7
+    MOVI GPR22, #4
+    ADD GPR26, GPR26, GPR21
+    ADDI GPR25, GPR25, #512
+    SUB GPR25, GPR25, GPR21
+    MOVI GPR6, #BASEADDR_MB
+    MOVRBBE [GPR6], GPR26
+    ADDI GPR6, GPR6, #2
+    MOVRBLE [GPR6], GPR25
+    ADDI GPR27, GPR27, #2
+    BI #label_judge_flag
+    NOP
+label_512:
+    MOVI GPR0, #256
+    SUB GPR17, GPR0, GPR7
+label_repeat_1:
+    MOVI GPR14, #2
+    MOVRR GPR15, GPR28
+label_next_1:
+    MOVBB [GPR7], [GPR15], GPR14
+    ADDI GPR15, GPR15, #2
+    ADDI GPR7, GPR7, #2
+    SUBI GPR17, GPR17, #2
+    BEQI #label_new_slice_three
+    NOP
+    MOVI GPR16, #62
+    SUBI GPR16, GPR16, #2
+    BEQI #label_repeat_1
+    NOP
+    BI #label_next_1
+    NOP
+label_new_slice_three:
+    MOVI GPR24, #BASEADDR_ISMB
+    ADD GPR24, GPR24, GPR27
+    ADD GPR24, GPR24, GPR27
+    MOVI GPR1, #2
+    MALCSMB [GPR24], GPR1
+    ISB SMB
+    ADD GPR8, GPR21, GPR4
+    SUBI GPR8, GPR8, #512
+    MOVI GPR9, #512
+    SUB GPR9, GPR9, GPR21
+    STOREM [GPR9], [GPR15], GPR8
+    ISB PBSC
+    MOVI GPR10, #0
+    STOREM [GPR10], [GPR21], GPR9
+    ISB PBSC
+    MOVRR GPR7, GPR24
+    SRL GPR7, GPR7, #2
+    SLL GPR7, GPR7, #9
+    MOVRR GPR23, GPR7
+    MOVI GPR21, #5
+    SUBI GPR7, GPR21, #256
+    MOVI GPR0, #256
+    ADDI GPR1, GPR23, #256
+    STOREM [GPR1], [GPR7], GPR0
+    ISB PBSC
+    ADD GPR26, GPR26, GPR21
+    ADDI GPR25, GPR25, #512
+    SUB GPR25, GPR25, GPR21
+    MOVI GPR6, #BASEADDR_MB
+    MOVRBBE [GPR6], GPR26
+    ADDI GPR6, GPR6, #2
+    MOVRBLE [GPR6], GPR25
+    ADDI GPR27, GPR27, #1
+    BI #label_judge_flag
+    NOP
+//////////////////////////////////////////////////
+//*****           opcode 4 table           *****//
+//////////////////////////////////////////////////
+label_table:
+    MOVI GPR0, #BASEADDR_TAB
+    ADD GPR0, GPR0, GPR28
+    MOVBRBE GPR4, [GPR0]
+    SUBI GPR20, GPR4, #0xffff
+    BEQI #label_flow_table
+    NOP
+label_generic_table:
+    SLL GPR1, GPR4, #8
+    SRL GPR1, GPR1, #8
+    MOVI GPR2, #BASEADDR_PCLUST
+    ADD GPR2, GPR2, GPR28
+    ADD GPR2, GPR2, GPR29
+    ADD GPR2, GPR2, GPR29
+    MOVBRBE GPR3, [GPR2]
+    MOVI GPR11, #BASEADDR_TB
+   // ADDI GPR11, GPR11, #4
+    ADDI GPR12, GPR11, #2
+    MOVRBLE [GPR11], GPR3
+    MOVRBLE [GPR12], GPR4
+    MOVI GPR5, #BASEADDR_TB
+    ADDI GPR5, GPR5, #4
+    LOADT GPR1, [GPR5], [GPR11]
+    ISB TBLC
+    ADDI GPR6, GPR5, #2
+    MOVBRBE GPR7, [GPR6]    //last 2B
+    MOVBRBE GPR8, [GPR5]    //first 2B
+    MOVI GPR9, #BASEADDR_TAG
+    ADD GPR9, GPR9, GPR28
+    ADDI GPR9, GPR9, #62
+    MOVI GPR10, #4
+    STOREM [GPR9], [GPR5], GPR10
+    ISB PBSC
+    SUBI GPR20, GPR7, #0xffff
+    BEQI #label_generic_A
+    NOP
+    ADDI GPR7, GPR7, #1
+    BI #label_generic_C
+    NOP
+label_generic_A:
+    SUBI GPR20, GPR8, #0xffff
+    BEQI #label_generic_B 
+    NOP
+    ADDI GPR8, GPR8, #1
+    MOVI GPR7, #0
+    BI #label_generic_C
+    NOP
+label_generic_B:
+    MOVI GPR7, #0
+    MOVI GPR8, #0
+label_generic_C:
+    MOVRBBE [GPR6], GPR7
+    MOVRBBE [GPR5], GPR8
+    ADDI GPR9, GPR9, #4
+    STOREM [GPR9], [GPR5], GPR10
+    ISB PBSC
+    MOVI GPR13, #BASEADDR_TB
+    MOVBRBE GPR7, [GPR6]
+    MOVBRBE GPR8, [GPR5]
+    STORET GPR1, [GPR13], #2
+    ISB TBSC
+    BI #label_judge_flag
+    NOP
+label_flow_table:
+    MOVI GPR0, #BASEADDR_TAB
+    ADD GPR0, GPR0, GPR28
+    MOVBRBE GPR4, [GPR0]
+    SLL GPR1, GPR4, #8
+    SRL GPR1, GPR1, #8
+    MOVI GPR2, #BASEADDR_PCLUST
+    ADD GPR2, GPR2, GPR28
+    ADD GPR2, GPR2, GPR29
+    ADD GPR2, GPR2, GPR29
+    MOVBRBE GPR3, [GPR2]
+    MOVI GPR11, #BASEADDR_TB
+    ADDI GPR12, GPR11, #2
+    MOVRBBE [GPR12], GPR3
+    MOVRBBE [GPR11], GPR4
+    MOVI GPR5, #BASEADDR_TB
+    ADDI GPR5, GPR5, #4
+    QUERYT GPR1, [GPR5], [GPR11], #2  
+    ISB TBQC
+    ADDI GPR6, GPR5, #2
+    MOVBRBE GPR7, [GPR6]   //last 2B
+    MOVBRBE GPR8, [GPR5]    //first 2B
+    MOVI GPR9, #BASEADDR_TAG
+    ADD GPR9, GPR9, GPR28
+    ADDI GPR9, GPR9, #62
+    MOVI GPR10, #4
+    STOREM [GPR9], [GPR5], GPR10
+    ISB PBSC
+    SUBI GPR20, GPR7, #0xffff
+    BEQI #label_flow_A
+    NOP
+    ADDI GPR7, GPR7, #1
+    BI #label_flow_C
+    NOP
+label_flow_A:
+    SUBI GPR20, GPR8, #0xffff
+    BEQI #label_flow_B 
+    NOP
+    ADDI GPR8, GPR8, #1
+    BI #label_flow_C
+    NOP
+label_flow_B:
+    MOVI GPR7, #0
+    MOVI GPR8, #0
+label_flow_C:
+    MOVRBBE [GPR6], GPR7
+    MOVRBBE [GPR5], GPR8
+    ADDI GPR9, GPR9, #4
+    STOREM [GPR9], [GPR5], GPR10
+    ISB PBSC
+    MOVI GPR13, #BASEADDR_TB
+    INSERTT GPR1, [GPR13], #4
+    ISB TBIC
+    BI #label_judge_flag
+    NOP
+//////////////////////////////////////////////////
+//*****         opcode 5  more wr+rd       *****//
+//////////////////////////////////////////////////
+label_more_wd:
+    MOVI GPR10, #BASEADDR_TAB
+    ADD GPR10, GPR10, GPR28
+    MOVBRBE GPR13, [GPR10]
+    MOVI GPR0, #256
+    SUBI GPR4, GPR27, #1
+    MOVI GPR1, #BASEADDR_TAG
+    ADD GPR5, GPR25, GPR26
+    SUBI GPR5, GPR5, #4
+    MOVI GPR3, #2
+    LOADM [GPR0], [GPR5], GPR3
+    ISB PBLC
+    ADDI GPR0, GPR0, #2
+    ADDI GPR5, GPR5, #2
+    LOADM [GPR0], [GPR5], GPR3
+    ISB PBLC
+    MOVI GPR8, #BASEADDR_HB
+    ADD GPR8, GPR8, GPR28
+    ADDI GPR8, GPR8, #64
+    MOVBRBE GPR9, [GPR8]
+    SUBI GPR8, GPR8, #2
+    MOVBRBE GPR10, [GPR8]
+    MOVI GPR6, #258
+    MOVBRBE GPR7, [GPR6]
+    SUBI GPR6, GPR6, #2
+    MOVBRBE GPR11, [GPR6]
+label_more_wr_rd:
+    ADDI GPR9, GPR9, #1
+    ADDI GPR7, GPR7, #1
+    SUBI GPR20, GPR9, #0
+    BEQI #label_more_a
+    NOP
+    SUBI GPR20, GPR7, #0
+    BEQI #label_more_b
+    NOP
+    SUBI GPR13, GPR13, #1
+    BEQI #label_last_storem
+    NOP
+    BI #label_more_wr_rd
+    NOP
+label_last_storem:
+    MOVRBBE [GPR8], GPR10
+    ADDI GPR8, GPR8, #2
+    MOVRBBE [GPR8], GPR9
+    MOVRBBE [GPR6], GPR11
+    ADDI GPR6, GPR6, #2
+    MOVRBBE [GPR6], GPR7
+    MOVI GPR6, #258
+    MOVI GPR0, #2
+    STOREM [GPR5], [GPR6], GPR0
+    ISB PBSC   
+    SUBI GPR6, GPR6, #2
+    SUBI GPR5, GPR5, #2
+    STOREM [GPR5], [GPR6], GPR0
+    ISB PBSC
+    BI #label_judge_flag
+    NOP
+label_more_a:
+    ADDI GPR10, GPR10, #1
+    B GPR30
+    NOP
+label_more_b:
+    ADDI GPR11, GPR11, #1
+    B GPR30
+    NOP
+//////////////////////////////////////////////////
+//*****             ISMB--ESMB add   +1     *****//
+//////////////////////////////////////////////////
+label_prepend_add_IS_1:
+    MOVI GPR5, #2
+    MOVI GPR4, #BASEADDR_ESMB
+    MOVBB [GPR4], [GPR24], GPR5
+    ADDI GPR1, GPR1, #2
+    SUBI GPR3, GPR3, #1
+    B GPR30
+//////////////////////////////////////////////////
+//*****             ISMB--ESMB add   +2    *****//
+//////////////////////////////////////////////////
+label_prepend_add_IS_2:
+    MOVI GPR6, #2
+    MOVI GPR4, #BASEADDR_ESMB
+    MOVBB [GPR4], [GPR24], GPR6
+    ADDI GPR4, GPR4, #2
+    ADDI GPR5, GPR24, #2
+    MOVBB [GPR4], [GPR5], GPR6
+    ADDI GPR1, GPR1, #4
+    SUBI GPR3, GPR3, #2
+    B GPR30
+

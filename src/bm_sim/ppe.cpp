@@ -780,7 +780,7 @@ bool ppeInit::table_init()
     long table_num = 0;
     int buf;
     FILE *fp;
-    //���ļ�
+    
     printf("load flowt\n");
     fp = fopen(def_ft_path, "r+");
     if (!fp) // fail to read file
@@ -998,7 +998,7 @@ void ppeInit::ins_next_init(int ppn,int cn)
     int fun_ins = 0;   
     int mfun_flag = 0; 
     FILE *fp;
-    //���ļ�
+    
     printf("3\n");
 
     fp = fopen(str_ins, "r+");
@@ -1087,7 +1087,7 @@ void ppeInit::ins_next_init(int ppn,int cn)
                 begin_index = rete + 2 - c;
                 while (*(c + begin_index) == ' ' || *(c + begin_index) == '\t')
                     begin_index++;
-                //�����һ���� //������
+                
                 if (c[begin_index] == '/' && c[begin_index + 1] == '/')
                 {
                     skip_signal = 1;
@@ -1896,7 +1896,9 @@ int ppeInit::lb_search(char *token)
 
 void ppeInit::Include_read_label(char *path_label)
 {
-    FILE *fp_1 = fopen(path_label, "r+");
+    char string_label[200]="/home/hrc/catkin_ws/behavioral-model-main/src/ppe_config_file/"; 
+    strcat(string_label,path_label);
+    FILE *fp_1 = fopen(string_label, "r+");
     FILE *fp_2;
     char token_2[100] = {0};
     int num = 0;                       
@@ -1916,12 +1918,12 @@ void ppeInit::Include_read_label(char *path_label)
         printf("can't open ins_mem!\n");
         exit(0);
     }
-    //�����ļ�����û��#include
+   
     while (!feof(fp_1))
     {
         char *token_1;
 
-        int flag = 0; //�ж��ļ����Ƿ���include
+        int flag = 0; 
         int begin_index_1 = 0;
         int define_signal_1 = 0;
         memset(str_1, 0, 200);
@@ -1932,11 +1934,11 @@ void ppeInit::Include_read_label(char *path_label)
             continue;
         char *retb_1 = strstr(str_1, "/*");
         char *rete_1 = strstr(str_1, "*/");
-        //ǰ��/**/����
+        
         if (multi_signal_1 == 1 && rete_1 != NULL)
         {
-            begin_index_1 = rete_1 + 2 - str_1; //������һ��*/ǰ�Ĳ���
-            multi_signal_1 = 0;                 //�����־λ
+            begin_index_1 = rete_1 + 2 - str_1; 
+            multi_signal_1 = 0;                 
         }
         else if (multi_signal_1 == 1)
             continue; //����δ����
@@ -1951,7 +1953,7 @@ void ppeInit::Include_read_label(char *path_label)
             continue;
         else if (str_1[begin_index_1] == '/' && str_1[begin_index_1 + 1] == '*')
         {
-            //����һ��*/,����Ҳ�������ômulti=1,conti,����ҵ���,�е����������ж�һ��
+            
             rete_1 = strstr(str_1 + begin_index_1, "*/");
             int skip_signal_1 = 0;
             while (rete_1 != NULL && str_1[begin_index_1] == '/' && str_1[begin_index_1 + 1] == '*')
@@ -1959,7 +1961,7 @@ void ppeInit::Include_read_label(char *path_label)
                 begin_index_1 = rete_1 + 2 - str_1;
                 while (*(str_1 + begin_index_1) == ' ' || *(str_1 + begin_index_1) == '\t')
                     begin_index_1++;
-                //�����һ���� //������
+                
                 if (str_1[begin_index_1] == '/' && str_1[begin_index_1 + 1] == '/')
                 {
                     skip_signal_1 = 1;
@@ -2212,13 +2214,13 @@ void ppeInit::lb_init(char *str_ins)
     long i, count = 0;
     long size = 0;
     int buf;
-    //�����꺯������
+    
     mfun_list *mfun_cur = (mfun_list *)malloc(sizeof(mfun_list));
     mfun_cur->next = NULL;
     macrofun_list = mfun_cur;
 
     FILE *fp;
-    //���ļ�
+    
     fp = fopen(str_ins, "r+");
     if (!fp) // fail to read file
     {
@@ -2261,7 +2263,7 @@ void ppeInit::lb_init(char *str_ins)
             continue;
         else if (c[begin_index] == '/' && c[begin_index + 1] == '*')
         {
-            //����һ��*/,����Ҳ�������ômulti=1,conti,����ҵ���,�е����������ж�һ��
+            
             rete = strstr(c + begin_index, "*/");
             int skip_signal = 0;
             while (rete != NULL && c[begin_index] == '/' && c[begin_index + 1] == '*')
@@ -2746,14 +2748,14 @@ void ppe_sim::pkt_to_tlb(Packet *pkt,int fcs=0, int port=0)
                 tlb[cur->tlb_num & 0x7fff].content[j] = *(data+(i - offset_num) * 256 + j - offset); 
             }
         }
-        token_tlb_des->tlb_num[i] = cur->tlb_num | 0x8000; //��TLB��λ����Ϊ��Ч
+        token_tlb_des->tlb_num[i] = cur->tlb_num | 0x8000; 
         printf("set 0x%x\n", cur->tlb_num & 0x7fff);
         tlb_list *pre = cur;
         free_tlb_list = cur->next_free;
         cur = free_tlb_list;
         free(pre);
     }
-    //����Mailboxλ
+    
     token_tlb_des->mb_addr = 1024;
     token_tlb_des->mb_content[0] = data_size >> 8;
     token_tlb_des->mb_content[1] = data_size % 256;
@@ -2783,7 +2785,7 @@ void ppe_sim::pkt_to_tlb(Packet *pkt,int fcs=0, int port=0)
 /************************************************************************************/
 void ppe_sim::if_stage(int ppn, int pc)
 {
-    //����PC�õ�ָ���ָ�����ID
+    
     printf("IF:pc=%d\n", pc);
     cur_if_id_bus[ppn].pc = pc;
     int index = pc >> 2;
@@ -6840,7 +6842,11 @@ void ppe_sim::export_pkt(Packet *pkt,int *packet_out)
                         }
                     }
                     tlb[select->tlb_num[slice_num] & 0x7fff].used = 0;
+                    
+                    // ready add to the list
                     // memset(tlb[select->tlb_num[slice_num]].content,0,256);
+                    
+
                 }
                 char pkt_name[30];
                 sprintf(pkt_name, "egr_%d_%ld_%d.txt", i, clk, ++egr_num);

@@ -513,8 +513,11 @@ SimpleSwitch::ingress_thread() {
       // ppeSim->pkt_to_ppe(packet.get());
       // ppeSim->ppe_to_pkt(packet.get()); 
       printf("--------------enter ppe-------------\n");
+      time_t first,sencond;
+      first = time(NULL);
       ppeSim->sim(packet.get());
-      printf("--------------leave ppe-------------\n");
+      sencond = time(NULL);
+      printf("--------------leave ppe-------------\n,the cost time in ppe is: %f\n",difftime(sencond,first));
     }
       
     if (phv->has_field("standard_metadata.parser_error")) {
